@@ -82,7 +82,7 @@ If you use this codebase, please cite:
   title   = {{VisionFashion}: Multi-Modal Style Embedding Learning with Vision Transformers and BERT for Fashion Image Analysis and Recommendation},
   year    = {2025},
   note    = {Work in progress},
-  url     = {https://github.com/<your-user>/VisionFashion}
+  url     = {https://github.com/tugcantopaloglu/vision-fashion-paper-deeplearning}
 }
 ```
 

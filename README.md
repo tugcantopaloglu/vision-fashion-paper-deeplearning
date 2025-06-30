@@ -2,6 +2,8 @@
 
 **Multi‑Modal Learning with Vision Transformers and BERT for Fashion Image Analysis and Recommendation**
 
+**Huggingface 🤗: https://huggingface.co/tugcantopaloglu/visionfashion**
+
 ---
 
 ## Repository Contents

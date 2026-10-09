@@ -1,123 +1,85 @@
-# VisionFashion: Multi‑Modal Style Embedding
+# VisionFashion
 
-**Multi‑Modal Learning with Vision Transformers and BERT for Fashion Image Analysis and Recommendation**
+Research notebook for fashion image and text embeddings using a Vision Transformer and BERT. The notebook trains a contrastive model and evaluates image-to-text and text-to-image retrieval.
 
-**Huggingface 🤗: https://huggingface.co/tugcantopaloglu/visionfashion**
+## Repository contents
 
----
+| File | Purpose |
+| --- | --- |
+| `VisionFashion.ipynb` | Google Colab notebook for data loading, contrastive training, retrieval evaluation and embedding examples. |
+| [VisionFashion_TugcanTopaloglu.pdf](VisionFashion_TugcanTopaloglu.pdf) | Author's research paper, including experiments beyond the implemented notebook. |
+| `tests/test_notebook.py` | Small CPU regression fixtures that do not download models or data. |
+| `LICENSE` | MIT license for the repository code. |
 
-## Repository Contents
+The linked [Hugging Face model repository](https://huggingface.co/tugcantopaloglu/visionfashion) is external to this checkout. Dataset files, trained checkpoints and a complete experiment environment lock are not included.
 
-| Path                  | Description                                                                                                                      |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `VisionFashion.ipynb` | Clean Jupyter notebook that trains the ViT + BERT model in two phases (contrastive pre‑training and classification fine‑tuning). |
-| `VisionFashion.pdf`   | Full research paper describing the methodology, experiments and results.                                                         |
-| `data/`               | (Not included) Place the **DeepFashion‑MultiModal** dataset splits here.                                                         |
-| `checkpoints/`        | (Optional) Put or save trained model weights here.                                                                               |
-| `requirements.txt`    | Minimal Python package list to reproduce the study.                                                                              |
+## Running the research notebook
 
-> **Tip:** If you cloned this repo with `git lfs`, the PDF will download automatically.  
-> Otherwise, grab it from the link below.
-
----
-
-## Quick Start
-
-```bash
-# 1. Clone the repo and enter it
-git clone https://github.com/<your‑user>/VisionFashion.git
-cd VisionFashion
-
-# 2. Create environment (Python 3.10 recommended)
-python -m venv venv
-source venv/bin/activate         # on Windows use venv\Scripts\activate
-pip install -r requirements.txt
-
-# 3. Download & unzip the DeepFashion‑MultiModal dataset
-#    (about 11 GB) into ./data
-#    Expected structure:
-#    data/
-#      train/
-#        000123.jpg
-#        ...
-#      valid/
-#      test/
-#      captions.csv
-
-# 4. (Optional) Add a pretrained ViT + BERT checkpoint to ./checkpoints
-
-# 5. Launch the notebook
-jupyter notebook VisionFashion.ipynb
+```sh
+git clone https://github.com/tugcantopaloglu/vision-fashion-paper-deeplearning.git
+cd vision-fashion-paper-deeplearning
 ```
 
-The notebook is fully annotated with **cell‑by‑cell instructions** for:
+Open `VisionFashion.ipynb` in Google Colab with a GPU runtime. Its setup cell installs Python packages and mounts Google Drive. The existing Colab and Drive paths require adjustment for another environment; the notebook is not a standalone local application.
 
-1. Loading and caching the dataset.
-2. Phase 1 – CLIP‑style contrastive learning of image/text embeddings.
-3. Phase 2 – Fine‑tuning classification heads for _Category_ and _Attribute_ prediction.
-4. Evaluation and visualisation of retrieval metrics and learning curves.
+1. Obtain the DeepFashion-MultiModal dataset under its own access and license terms.
+2. Set `DRIVE_BASE_PATH`, `IMAGES_ZIP_PATH`, `CAPTIONS_JSON_PATH` and `COLAB_WORKING_DIR` to your data locations. The notebook reads an image archive and `captions.json`, not a CSV of captions or prearranged train/valid/test folders.
+3. Captions can be a filename-to-caption JSON object or a list of objects with `image` and `caption` keys. Image filenames must match files in the extracted directory. Both a flat image archive and an archive with an `images/` subdirectory are supported.
+4. Run cells in order. The notebook loads `google/vit-base-patch16-224-in21k` and `bert-base-uncased` from Hugging Face, requiring network access or a populated local cache.
+5. Review `BATCH_SIZE`, `LEARNING_RATE` and `EPOCHS` before starting training. The checked-in defaults are 16, `1e-5` and 10.
 
----
+At least three valid image-caption pairs are required for nonempty train, validation and test partitions. Splits use seed 42; keep the input file order, data and package versions fixed when comparing runs. GPU kernels are not configured for strict deterministic execution. Encoder and processor downloads use pinned Hugging Face revisions in the configuration cell; these are maintenance pins, not a record of the original experiment revisions.
 
-## Key Results (Reproduced)
+The notebook saves `best_multimodal_fashion_model.pth` based on validation loss in the runtime working directory. State-dict loads use `weights_only=True`. Treat checkpoints as trusted external inputs and verify that they match the model architecture.
 
-| Task                       | Metric     | Score           |
-| -------------------------- | ---------- | --------------- |
-| **Image ↔ Text Retrieval** | R@10 (I→T) | **0.549 ± .01** |
-|                            | R@10 (T→I) | **0.554 ± .01** |
-| **Category Prediction**    | Top‑1 Acc. | **0.947**       |
-| **Attribute Prediction**   | Avg. R@5   | **0.729**       |
+The category/attribute evaluation cell is a scaffold. `MultiModalFashionModel` does not implement `predict_category` or `predict_attributes`, and the dataset does not return category or attribute labels. Reproducing that phase requires the original annotated data, classification heads and training implementation.
 
-These figures match those reported in the accompanying paper. fileciteturn0file0
+## Paper-reported results
 
----
+These are values from the accompanying paper's Tables I-III, not results reproduced by the checked-in notebook or the maintenance tests. The PDF and historical notebook outputs remain unchanged.
 
-## Paper
+| Task | Metric | Paper value |
+| --- | --- | --- |
+| Image-to-text retrieval | R@10 | 0.5492 |
+| Text-to-image retrieval | R@10 | 0.5539 |
+| Category prediction | Top-1 accuracy | 0.9470 |
+| Attribute prediction | Average recall@5 | 0.7291 |
 
-The complete methodology, ablation studies and references are provided in **VisionFashion.pdf** (see `VisionFashion.pdf` in this repo).
+The paper describes an A100 experiment and separate contrastive and classification phases. No smaller-GPU capacity or reproduction of these metrics has been verified here. For retrieval sets smaller than a requested K, evaluation searches all available candidates while keeping the R@K label.
 
-If you use this codebase, please cite:
+## Local regression checks
+
+Maintenance fixtures passed on Python 3.13.1 with PyTorch 2.13.0. To run them with a suitable CPU PyTorch installation:
+
+Create and activate a virtual environment for your shell, then install the fixture dependencies.
+
+```sh
+python -m venv .venv
+python -m pip install torch numpy Pillow nbformat ipython
+python -m unittest discover -s tests -v
+```
+
+The fixtures execute selected notebook definitions with tiny images, identity embeddings and processor stubs. They check notebook syntax and evaluation ordering, JSON caption loading, directory selection, nonempty seeded splits, small-set retrieval, skipped-batch loss accounting and embedding examples. They do not load pretrained ViT/BERT weights, train the research model or establish dataset quality.
+
+## Reproduction requirements
+
+- Data: original images, captions, annotation definitions and experiment split provenance are external. A fixed seed alone does not recover the author's earlier split.
+- Models: pretrained encoders and matching learned state dictionaries are external. Linked model weights have not been loaded in the fixture tests.
+- Hardware: a working GPU runtime and sufficient RAM/VRAM for the chosen dataset and batch size are needed for full training. Capacity and full inference performance require separate measurement.
+- Experiments: record Python/package versions, dataset version, split indices, seeds, hardware, checkpoints and evaluation settings. Changes to split handling and invalid-batch accounting may change newly generated metrics.
+
+## Citation
 
 ```bibtex
 @unpublished{topaloglu2025visionfashion,
-  author  = {Tuğcan Topaloğlu},
-  title   = {{VisionFashion}: Multi-Modal Style Embedding Learning with Vision Transformers and BERT for Fashion Image Analysis and Recommendation},
-  year    = {2025},
-  note    = {Work in progress},
-  url     = {https://github.com/tugcantopaloglu/vision-fashion-paper-deeplearning}
+  author = {Tuğcan Topaloğlu},
+  title = {{VisionFashion}: Multi-Modal Style Embedding Learning with Vision Transformers and BERT for Fashion Image Analysis and Recommendation},
+  year = {2025},
+  note = {Work in progress},
+  url = {https://github.com/tugcantopaloglu/vision-fashion-paper-deeplearning}
 }
 ```
 
----
+## License
 
-## Requirements
-
-```
-torch>=2.3
-torchvision>=0.18
-transformers>=4.41
-timm>=0.9
-pandas
-scikit-learn
-matplotlib
-```
-
-All dependencies are listed in `requirements.txt`.
-
----
-
-## Re‑training Tips
-
-- Use a GPU with **at least 16 GB** of VRAM. The full experiment was run on an **A100** (80 GB) but can be reproduced on a **T4/RTX 4000** with batch 32.
-- Lower `batch_size` in the notebook if you encounter OOM.
-- Monitor **validation contrastive loss**; best checkpoints typically occur between epochs 15‑20.
-- The notebook automatically saves the **best contrastive** and **best classification** checkpoints.
-
----
-
-## Licence
-
-The code is released under the MIT licence.  
-The DeepFashion dataset is subject to its own licence terms—please make sure you comply with them before redistribution.
-
-Happy experimenting! ✨
+Code is MIT licensed. The DeepFashion dataset and external pretrained models have their own access and license terms.
